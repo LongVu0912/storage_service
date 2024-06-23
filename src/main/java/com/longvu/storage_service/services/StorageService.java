@@ -57,11 +57,11 @@ public class StorageService {
         Optional<FileEntity> fileData = fileRepository.findByFileName(fileName);
         String filePath = fileData.get().getFilePath();
         File file = new File(filePath);
+
+        fileRepository.delete(fileData.get());
+
         if (file.exists()) {
             file.delete();
-            fileRepository.delete(fileData.get());
-        } else {
-            throw new AppException(ErrorCode.FILE_NOT_FOUND);
         }
     }
 
