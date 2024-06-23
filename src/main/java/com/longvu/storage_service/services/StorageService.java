@@ -53,6 +53,18 @@ public class StorageService {
         }
     }
 
+    public void deleteFile(String fileName) throws AppException {
+        Optional<FileEntity> fileData = fileRepository.findByFileName(fileName);
+        String filePath = fileData.get().getFilePath();
+        File file = new File(filePath);
+        if (file.exists()) {
+            file.delete();
+            fileRepository.delete(fileData.get());
+        } else {
+            throw new AppException(ErrorCode.FILE_NOT_FOUND);
+        }
+    }
+
     public byte[] getFileFromFilename(String fileName) throws AppException {
         Optional<FileEntity> fileData = fileRepository.findByFileName(fileName);
         String filePath = fileData.get().getFilePath();
