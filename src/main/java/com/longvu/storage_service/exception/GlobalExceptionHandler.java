@@ -6,8 +6,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import com.longvu.storage_service.dtos.responses.ApiResponse;
 
-@ControllerAdvice // This annotation is used to define @ExceptionHandler, @InitBinder, and @ModelAttribute methods that
-// apply to all @RequestMapping methods.
+@ControllerAdvice
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = RuntimeException.class)

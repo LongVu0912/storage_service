@@ -8,19 +8,20 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.longvu.storage_service.dtos.responses.ApiResponse;
+import com.longvu.storage_service.entities.FileEntity;
 import com.longvu.storage_service.exception.AppException;
 import com.longvu.storage_service.services.StorageService;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 
 @RestController
 @RequestMapping("/storage")
@@ -31,14 +32,16 @@ public class StorageController {
     private StorageService fileService;
 
     @PostMapping("")
-    public ResponseEntity<ApiResponse> uploadFile(@RequestParam("file") List<MultipartFile> files) throws AppException {
+    public ResponseEntity<ApiResponse> uploadFile(@RequestParam("files") List<MultipartFile> files)
+            throws AppException {
         String fileNameExists = fileService.fileNameExists(files);
 
         if (fileNameExists != "") {
             return ResponseEntity.ok()
                     .body(ApiResponse.builder()
-                            .message("Filename exists")
-                            .result("Filename: " + fileNameExists)
+                            .code(1000)
+                            .message("Filename exists: " + fileNameExists)
+                            .result(null)
                             .build());
         }
 
@@ -50,6 +53,17 @@ public class StorageController {
                 .body(ApiResponse.builder()
                         .message("Upload Successfully")
                         .result(null)
+                        .build());
+    }
+
+    @GetMapping("/getAllFiles")
+    public ResponseEntity<ApiResponse> getAllFiles() {
+        List<FileEntity> files = fileService.getAllFiles();
+
+        return ResponseEntity.ok()
+                .body(ApiResponse.builder()
+                        .message("Get all files successfully")
+                        .result(files)
                         .build());
     }
 

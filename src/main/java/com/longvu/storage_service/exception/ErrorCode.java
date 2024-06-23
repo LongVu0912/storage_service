@@ -9,8 +9,10 @@ import lombok.Getter;
 public enum ErrorCode {
     UNCATEGORIZED_EXCEPTION(9999, "Uncategorized error", HttpStatus.INTERNAL_SERVER_ERROR),
     FILE_NAME_EXISTS(1000, "Filename exists", HttpStatus.CONFLICT),
-    INVALID_FILE(1002, "Invalid file", HttpStatus.BAD_REQUEST),
-    FILE_NAME_NOT_FOUND(1001, "File not found", HttpStatus.NOT_FOUND),;
+    INVALID_FILE(1001, "Invalid file", HttpStatus.BAD_REQUEST),
+    FILE_NAME_NOT_FOUND(1002, "File not found", HttpStatus.NOT_FOUND),
+    FILE_NOT_FOUND(1003, "File not found", HttpStatus.NOT_FOUND),
+    ;
 
     ErrorCode(int code, String message, HttpStatusCode statusCode) {
         this.code = code;

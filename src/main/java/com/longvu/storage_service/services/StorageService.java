@@ -27,6 +27,10 @@ public class StorageService {
 
     private String FOLDER_PATH = determineFolderPath();
 
+    public List<FileEntity> getAllFiles() {
+        return fileRepository.findAll();
+    }
+
     public void uploadFile(MultipartFile fileUpload) throws AppException {
         if (fileUpload.getOriginalFilename() == null) {
             throw new AppException(ErrorCode.INVALID_FILE);
@@ -49,10 +53,15 @@ public class StorageService {
         }
     }
 
-    public byte[] getFileFromFilename(String fileName) throws IOException {
+    public byte[] getFileFromFilename(String fileName) throws AppException {
         Optional<FileEntity> fileData = fileRepository.findByFileName(fileName);
         String filePath = fileData.get().getFilePath();
-        byte[] file = Files.readAllBytes(new File(filePath).toPath());
+        byte[] file = null;
+        try {
+            file = Files.readAllBytes(new File(filePath).toPath());
+        } catch (IOException e) {
+            throw new AppException(ErrorCode.FILE_NOT_FOUND);
+        }
         return file;
     }
 
@@ -77,7 +86,12 @@ public class StorageService {
         String folderPath = "";
         try {
             // Get the URL of the JAR file
-            String jarPath = StorageService.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath();
+            String jarPath = StorageService.class
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .toURI()
+                    .getPath();
             // Decode the path to handle spaces and special characters
             String decodedPath = java.net.URLDecoder.decode(jarPath, java.nio.charset.StandardCharsets.UTF_8);
             File jarFile = new File(decodedPath);
