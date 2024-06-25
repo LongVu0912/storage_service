@@ -2,6 +2,7 @@ package com.longvu.storage_service.controllers;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -18,26 +19,26 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.longvu.storage_service.dtos.responses.ApiResponse;
-import com.longvu.storage_service.entities.FileEntity;
+import com.longvu.storage_service.dtos.responses.FileResponse;
 import com.longvu.storage_service.exception.AppException;
 import com.longvu.storage_service.services.StorageService;
 
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/storage")
+@RequestMapping("/api/storage")
 @RequiredArgsConstructor
 @CrossOrigin(origins = "*", allowedHeaders = "*")
 public class StorageController {
     @Autowired
-    private StorageService fileService;
+    private StorageService storageService;
 
     @PostMapping("")
     public ResponseEntity<ApiResponse> uploadFile(@RequestParam("files") List<MultipartFile> files)
             throws AppException {
-        String fileNameExists = fileService.fileNameExists(files);
+        String fileNameExists = storageService.fileNameExists(files);
 
-        if (fileNameExists != "") {
+        if (!Objects.equals(fileNameExists, "")) {
             return ResponseEntity.ok()
                     .body(ApiResponse.builder()
                             .code(1000)
@@ -47,7 +48,7 @@ public class StorageController {
         }
 
         for (MultipartFile file : files) {
-            fileService.uploadFile(file);
+            storageService.uploadFile(file);
         }
 
         return ResponseEntity.ok()
@@ -57,9 +58,9 @@ public class StorageController {
                         .build());
     }
 
-    @GetMapping("/getAllFiles")
+    @GetMapping("/getMyFiles")
     public ResponseEntity<ApiResponse> getAllFiles() {
-        List<FileEntity> files = fileService.getAllFiles();
+        List<FileResponse> files = storageService.getMyFiles();
 
         return ResponseEntity.ok()
                 .body(ApiResponse.builder()
@@ -70,9 +71,9 @@ public class StorageController {
 
     @GetMapping("/{fileName}")
     public ResponseEntity<byte[]> getFile(@PathVariable String fileName) throws IOException {
-        byte[] file = fileService.getFileFromFilename(fileName);
+        byte[] file = storageService.getFileFromFilename(fileName);
 
-        String contentType = fileService.getContentType(fileName);
+        String contentType = storageService.getContentType(fileName);
 
         return ResponseEntity.status(HttpStatus.OK)
                 .contentType(MediaType.valueOf(contentType))
@@ -81,7 +82,7 @@ public class StorageController {
 
     @DeleteMapping("/{fileName}")
     public ResponseEntity<ApiResponse> deleteFile(@PathVariable String fileName) throws AppException {
-        fileService.deleteFile(fileName);
+        storageService.deleteFile(fileName);
 
         return ResponseEntity.ok()
                 .body(ApiResponse.builder()

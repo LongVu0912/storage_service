@@ -6,32 +6,54 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.longvu.storage_service.dtos.responses.FileResponse;
 import com.longvu.storage_service.entities.FileEntity;
+import com.longvu.storage_service.entities.UserEntity;
 import com.longvu.storage_service.exception.AppException;
 import com.longvu.storage_service.exception.ErrorCode;
 import com.longvu.storage_service.repositories.StorageRepository;
+import com.longvu.storage_service.repositories.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
+@EnableMethodSecurity()
 @RequiredArgsConstructor
 public class StorageService {
+    @Autowired
+    private StorageRepository storageRepository;
 
     @Autowired
-    private StorageRepository fileRepository;
+    private UserRepository userRepository;
 
-    private String FOLDER_PATH = determineFolderPath();
+    private final String FOLDER_PATH = determineFolderPath();
 
-    public List<FileEntity> getAllFiles() {
-        return fileRepository.findAll();
+    public List<FileResponse> getMyFiles() {
+        UserEntity currentUser = getCurrentUser();
+
+        List<FileEntity> files = storageRepository.getByUser(currentUser);
+
+        return files.stream()
+                .map(file -> FileResponse.builder()
+                        .id(file.getId())
+                        .fileName(file.getFileName())
+                        .filePath(file.getFilePath())
+                        .fileType(file.getFileType())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     public void uploadFile(MultipartFile fileUpload) throws AppException {
+        UserEntity currentUser = getCurrentUser();
+
         if (fileUpload.getOriginalFilename() == null) {
             throw new AppException(ErrorCode.INVALID_FILE);
         }
@@ -42,23 +64,31 @@ public class StorageService {
             fileUpload.transferTo(new File(filePath));
 
             FileEntity newFile = FileEntity.builder()
+                    .user(currentUser)
                     .fileName(fileUpload.getOriginalFilename())
                     .fileType(fileUpload.getContentType())
                     .filePath(filePath)
                     .build();
 
-            fileRepository.save(newFile);
+            storageRepository.save(newFile);
         } catch (Exception e) {
             throw new AppException(ErrorCode.UNCATEGORIZED_EXCEPTION);
         }
     }
 
     public void deleteFile(String fileName) throws AppException {
-        Optional<FileEntity> fileData = fileRepository.findByFileName(fileName);
+        UserEntity currentUser = getCurrentUser();
+
+        Optional<FileEntity> fileData = storageRepository.findByFileName(fileName);
+
+        if (currentUser != fileData.get().getUser()) {
+            throw new AppException(ErrorCode.INVALID_USER);
+        }
+
         String filePath = fileData.get().getFilePath();
         File file = new File(filePath);
 
-        fileRepository.delete(fileData.get());
+        storageRepository.delete(fileData.get());
 
         if (file.exists()) {
             file.delete();
@@ -66,7 +96,14 @@ public class StorageService {
     }
 
     public byte[] getFileFromFilename(String fileName) throws AppException {
-        Optional<FileEntity> fileData = fileRepository.findByFileName(fileName);
+        // UserEntity currentUser = getCurrentUser();
+
+        Optional<FileEntity> fileData = storageRepository.findByFileName(fileName);
+
+        //        if (fileData.get().getUser() != currentUser) {
+        //            throw new AppException(ErrorCode.FILE_NOT_FOUND);
+        //        }
+
         String filePath = fileData.get().getFilePath();
         byte[] file = null;
         try {
@@ -78,16 +115,15 @@ public class StorageService {
     }
 
     public String getContentType(String fileName) throws IOException {
-        Optional<FileEntity> fileData = fileRepository.findByFileName(fileName);
-        String contentType = fileData.get().getFileType();
-        return contentType;
+        Optional<FileEntity> fileData = storageRepository.findByFileName(fileName);
+        return fileData.get().getFileType();
     }
 
     public String fileNameExists(List<MultipartFile> files) {
         String fileNameExists = "";
 
         for (MultipartFile file : files) {
-            if (fileRepository.existsByFileName(file.getOriginalFilename())) {
+            if (storageRepository.existsByFileName(file.getOriginalFilename())) {
                 fileNameExists += file.getOriginalFilename() + ", ";
             }
         }
@@ -131,5 +167,18 @@ public class StorageService {
         }
 
         return filesFolder.getAbsolutePath() + File.separator;
+    }
+
+    private UserEntity getCurrentUser() {
+        var context = SecurityContextHolder.getContext();
+        String name = context.getAuthentication().getName();
+
+        Optional<UserEntity> user = userRepository.findByUsername(name);
+
+        if (user.isEmpty()) {
+            throw new AppException(ErrorCode.USER_NOT_FOUND);
+        }
+
+        return user.get();
     }
 }
