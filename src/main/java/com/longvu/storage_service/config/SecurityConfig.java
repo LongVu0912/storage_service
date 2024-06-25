@@ -24,7 +24,7 @@ public class SecurityConfig {
     private CustomJwtDecoder customJwtDecoder;
 
     // List of public endpoints that do not require authentication
-    private static final String[] PUBLIC_ENDPOINTS = {"/api/auth/**", "/api/storage/**"};
+    private static final String[] PUBLIC_ENDPOINTS = {"/", "/files", "/api/auth/**", "/api/storage/**"};
 
     // This method configures the security filter chain
     @Bean
