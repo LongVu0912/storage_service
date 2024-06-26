@@ -36,7 +36,8 @@ public class SecurityConfig {
         // Require authentication for all other requests
         http.authorizeHttpRequests(request -> request.anyRequest().authenticated());
 
-        // Configure the OAuth2 resource server to use the custom JWT decoder and authentication entry point
+        // Configure the OAuth2 resource server to use the custom JWT decoder and
+        // authentication entry point
         http.oauth2ResourceServer(oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(customJwtDecoder))
                 .authenticationEntryPoint(new JwtAuthenticationEntryPoint()));
 
@@ -54,6 +55,8 @@ public class SecurityConfig {
             source.registerCorsConfiguration("/**", configuration);
             httpSecurityCorsConfigurer.configurationSource(source);
         });
+
+        http.headers(AbstractHttpConfigurer::disable);
 
         // Build and return the security filter chain
         return http.build();
